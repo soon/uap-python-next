@@ -76,7 +76,7 @@ class build_regexes(Command):
             return text.encode('utf8')
 
         import yaml
-        py_dest = os.path.join(self.build_lib, 'ua_parser', '_regexes.py')
+        py_dest = os.path.join(self.build_lib, 'ua_parser_next', '_regexes.py')
 
         log.info('compiling regexes.yaml -> _regexes.py')
         with open(yaml_src, 'rb') as fp:
@@ -138,7 +138,7 @@ class build_regexes(Command):
         if not sdist.finalized:
             return
 
-        sdist.filelist.files.append('ua_parser/_regexes.py')
+        sdist.filelist.files.append('ua_parser_next/_regexes.py')
 
 
 class develop(_develop):
@@ -173,16 +173,16 @@ cmdclass = {
 
 
 setup(
-    name='ua-parser',
-    version='0.8.0',
+    name='ua-parser-next',
+    version='0.9.0',
     description="Python port of Browserscope's user agent parser",
     author='PBS',
     author_email='no-reply@pbs.org',
-    packages=['ua_parser'],
+    packages=['ua_parser_next'],
     package_dir={'': '.'},
     license='Apache 2.0',
     zip_safe=False,
-    url='https://github.com/ua-parser/uap-python',
+    url='https://github.com/soon/uap-python-next',
     include_package_data=True,
     setup_requires=['pyyaml'],
     install_requires=[],

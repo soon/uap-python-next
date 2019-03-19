@@ -105,7 +105,7 @@ class ParseTest(unittest.TestCase):
 
         yamlFile = open(os.path.join(TEST_RESOURCES_DIR,
                                      'pgts_browser_list.yaml'))
-        yamlContents = yaml.load(yamlFile)
+        yamlContents = yaml.load(yamlFile, Loader=yaml.SafeLoader)
         yamlFile.close()
 
         for test_case in yamlContents['test_cases']:
@@ -128,7 +128,7 @@ class ParseTest(unittest.TestCase):
     # Run a set of test cases from a YAML file
     def runUserAgentTestsFromYAML(self, file_name):
         yamlFile = open(os.path.join(TEST_RESOURCES_DIR, file_name))
-        yamlContents = yaml.load(yamlFile)
+        yamlContents = yaml.load(yamlFile, Loader=yaml.SafeLoader)
         yamlFile.close()
 
         for test_case in yamlContents['test_cases']:
@@ -144,7 +144,6 @@ class ParseTest(unittest.TestCase):
                         'minor': test_case['minor'],
                         'patch': test_case['patch']}
 
-            result = {}
             result = user_agent_parser.ParseUserAgent(user_agent_string, **kwds)
             self.assertEqual(
                 result, expected,
@@ -155,7 +154,7 @@ class ParseTest(unittest.TestCase):
 
     def runOSTestsFromYAML(self, file_name):
         yamlFile = open(os.path.join(TEST_RESOURCES_DIR, file_name))
-        yamlContents = yaml.load(yamlFile)
+        yamlContents = yaml.load(yamlFile, Loader=yaml.SafeLoader)
         yamlFile.close()
 
         for test_case in yamlContents['test_cases']:
@@ -192,7 +191,7 @@ class ParseTest(unittest.TestCase):
 
     def runDeviceTestsFromYAML(self, file_name):
         yamlFile = open(os.path.join(TEST_RESOURCES_DIR, file_name))
-        yamlContents = yaml.load(yamlFile)
+        yamlContents = yaml.load(yamlFile, Loader=yaml.SafeLoader)
         yamlFile.close()
 
         for test_case in yamlContents['test_cases']:

@@ -19,6 +19,7 @@ from __future__ import absolute_import
 import os
 import re
 
+
 __author__ = 'Lindsey Simon <elsigh@gmail.com>'
 
 
@@ -62,14 +63,20 @@ class UserAgentParser(object):
                 v1 = self.v1_replacement
             elif match.lastindex and match.lastindex >= 2:
                 v1 = match.group(2)
+            if v1 == '':
+                v1 = None
 
             if self.v2_replacement:
                 v2 = self.v2_replacement
             elif match.lastindex and match.lastindex >= 3:
                 v2 = match.group(3)
+            if v2 == '':
+                v2 = None
 
             if match.lastindex and match.lastindex >= 4:
                 v3 = match.group(4)
+            if v3 == '':
+                v3 = None
 
         return family, v1, v2, v3
 
@@ -104,38 +111,54 @@ class OSParser(object):
                            for group_index in range(1, match.lastindex + 1)]
         return match_spans
 
+    def ApplyReplacement(self, replacement, match):
+        context = {
+            'max_replacement_n': 0,
+            'replacements_count': 0,
+        }
+
+        def count_replacements(replacement_match):
+            replacement_n = int(replacement_match.group(1))
+            context['max_replacement_n'] = max(replacement_n, context['max_replacement_n'])
+            context['replacements_count'] += 1
+            return '{{{0}}}'.format(replacement_n)
+
+        replacement_format = re.sub(r'\$(\d)', count_replacements, replacement)
+        if context['replacements_count'] == 0:
+            return replacement
+        else:
+            sub_args = [''] + [
+                match.group(x) if x <= match.lastindex else ''
+                for x in range(1, context['max_replacement_n'] + 1)
+            ]
+            return replacement_format.format(*sub_args)
+
     def Parse(self, user_agent_string):
         os, os_v1, os_v2, os_v3, os_v4 = None, None, None, None, None
         match = self.user_agent_re.search(user_agent_string)
         if match:
             if self.os_replacement:
-                if re.search(r'\$1', self.os_replacement):
-                    os = re.sub(r'\$1', match.group(1), self.os_replacement)
-                else:
-                    os = self.os_replacement
+                os = self.ApplyReplacement(self.os_replacement, match)
             elif match.lastindex:
                 os = match.group(1)
 
             if self.os_v1_replacement:
-                if re.search(r'\$1', self.os_v1_replacement):
-                    os_v1 = re.sub(r'\$1', match.group(1), self.os_v1_replacement)
-                else:
-                    os_v1 = self.os_v1_replacement
+                os_v1 = self.ApplyReplacement(self.os_v1_replacement, match)
             elif match.lastindex and match.lastindex >= 2:
                 os_v1 = match.group(2)
 
             if self.os_v2_replacement:
-                os_v2 = self.os_v2_replacement
+                os_v2 = self.ApplyReplacement(self.os_v2_replacement, match)
             elif match.lastindex and match.lastindex >= 3:
                 os_v2 = match.group(3)
 
             if self.os_v3_replacement:
-                os_v3 = self.os_v3_replacement
+                os_v3 = self.ApplyReplacement(self.os_v3_replacement, match)
             elif match.lastindex and match.lastindex >= 4:
                 os_v3 = match.group(4)
 
             if self.os_v4_replacement:
-                os_v4 = self.os_v4_replacement
+                os_v4 = self.ApplyReplacement(self.os_v4_replacement, match)
             elif match.lastindex and match.lastindex >= 5:
                 os_v4 = match.group(5)
 

@@ -7,8 +7,8 @@ formerly https://github.com/tobie/ua-parser)
 Build Status
 ------------
 
-.. image:: https://travis-ci.org/ua-parser/uap-python.svg
-   :target: https://travis-ci.org/ua-parser/uap-python
+.. image:: https://travis-ci.org/soon/uap-python-next.svg
+   :target: https://travis-ci.org/soon/uap-python-next
 
 Installing
 ----------
@@ -20,7 +20,7 @@ Just run:
 
 .. code-block:: sh
 
-    $ pip install ua-parser
+    $ pip install ua-parser-next
 
 Manual install
 ~~~~~~~~~~~~~~

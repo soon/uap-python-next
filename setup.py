@@ -8,6 +8,8 @@ from setuptools.command.develop import develop as _develop
 from setuptools.command.sdist import sdist as _sdist
 from setuptools.command.install import install as _install
 
+import ua_parser_next
+
 
 def check_output(*args, **kwargs):
     from subprocess import Popen
@@ -174,7 +176,7 @@ cmdclass = {
 
 setup(
     name='ua-parser-next',
-    version='0.9.0',
+    version=ua_parser_next.__version__,
     description="Python port of Browserscope's user agent parser",
     author='PBS',
     author_email='no-reply@pbs.org',

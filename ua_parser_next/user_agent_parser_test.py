@@ -55,6 +55,30 @@ class ParseTest(unittest.TestCase):
         self.runDeviceTestsFromYAML(os.path.join(
             TEST_RESOURCES_DIR, 'tests/test_device.yaml'))
 
+    def test_parse_device(self):
+        self.run_device_tests_from_yaml_v2(
+            os.path.join(TEST_RESOURCES_DIR, 'tests/test_device.yaml')
+        )
+
+    def test_parse_device__with_extra_parsers(self):
+        custom_device_parser = user_agent_parser.DeviceParser(
+            r'; *((?:SCH|SGH|SHV|SHW|SPH|SC|SM)\-[A-Za-z0-9 ]+)(/?[^ ]*|)',
+            'Custom Samsung $1',
+            'Custom Samsung',
+            'Custom $1'
+        )
+        expected = {
+            'family': 'Custom Samsung',
+            'brand': 'Custom SM-G973F',
+            'model': 'SM-G973F',
+        }
+        parsed_device = user_agent_parser.parse_device(
+            'Mozilla/5.0 (Linux; Android 9; SM-G973F) AppleWebKit/537.36 (KHTML, like Gecko) '
+            'Chrome/72.0.3626.121 Mobile Safari/537.36',
+            extra_parsers=[custom_device_parser]
+        )
+        self.assertEqual(expected, parsed_device)
+
     def testMozillaStrings(self):
         self.runUserAgentTestsFromYAML(os.path.join(
             TEST_RESOURCES_DIR, 'test_resources/firefox_user_agent_strings.yaml'))
@@ -97,6 +121,37 @@ class ParseTest(unittest.TestCase):
         self.assertEqual(
             result, expected,
             "UA: {0}\n expected<{1}> != actual<{2}>".format(user_agent_string, expected, result))
+
+    def test_parse(self):
+        user_agent_string = 'Mozilla/5.0 (Macintosh; U; Intel Mac OS X 10.4; fr; rv:1.9.1.5) ' \
+                            'Gecko/20091102 Firefox/3.5.5,gzip(gfe),gzip(gfe)'
+        expected = {
+            'device': {
+                'family': 'Other',
+                'brand': None,
+                'model': None
+            },
+            'os': {
+                'family': 'Mac OS X',
+                'major': '10',
+                'minor': '4',
+                'patch': None,
+                'patch_minor': None
+            },
+            'user_agent': {
+                'family': 'Firefox',
+                'major': '3',
+                'minor': '5',
+                'patch': '5'
+            },
+            'string': user_agent_string
+        }
+
+        result = user_agent_parser.parse(user_agent_string)
+        self.assertEqual(
+            result, expected,
+            "UA: {0}\n expected<{1}> != actual<{2}>".format(user_agent_string, expected, result))
+
     # Make a YAML file for manual comparsion with pgts_browser_list-orig.yaml
     def makePGTSComparisonYAML(self):
         import codecs
@@ -219,6 +274,33 @@ class ParseTest(unittest.TestCase):
                     result['family'],
                     result['brand'],
                     result['model']))
+
+    def run_device_tests_from_yaml_v2(self, file_name):
+        with open(os.path.join(TEST_RESOURCES_DIR, file_name)) as yaml_file:
+            yaml_contents = yaml.load(yaml_file, Loader=yaml.SafeLoader)
+
+        for test_case in yaml_contents['test_cases']:
+            user_agent_string = test_case['user_agent_string']
+
+            # The expected results
+            expected = {
+                'family': test_case['family'],
+                'brand': test_case['brand'],
+                'model': test_case['model']
+            }
+
+            result = user_agent_parser.parse_device(user_agent_string,)
+            self.assertEqual(
+                result, expected,
+                "UA: {0}\n expected<{1} {2} {3}> != actual<{4} {5} {6}>".format(
+                    user_agent_string,
+                    expected['family'],
+                    expected['brand'],
+                    expected['model'],
+                    result['family'],
+                    result['brand'],
+                    result['model'])
+            )
 
 
 class GetFiltersTest(unittest.TestCase):

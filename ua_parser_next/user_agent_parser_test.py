@@ -63,14 +63,14 @@ class ParseTest(unittest.TestCase):
     def test_parse_device__with_extra_parsers(self):
         custom_device_parser = user_agent_parser.DeviceParser(
             r'; *((?:SCH|SGH|SHV|SHW|SPH|SC|SM)\-[A-Za-z0-9 ]+)(/?[^ ]*|)',
-            'Custom Samsung $1',
-            'Custom Samsung',
-            'Custom $1'
+            device_replacement='Custom Samsung $1',
+            brand_replacement='Custom Samsung',
+            model_replacement='Custom $1'
         )
         expected = {
-            'family': 'Custom Samsung',
-            'brand': 'Custom SM-G973F',
-            'model': 'SM-G973F',
+            'family': 'Custom Samsung SM-G973F',
+            'brand': 'Custom Samsung',
+            'model': 'Custom SM-G973F',
         }
         parsed_device = user_agent_parser.parse_device(
             'Mozilla/5.0 (Linux; Android 9; SM-G973F) AppleWebKit/537.36 (KHTML, like Gecko) '

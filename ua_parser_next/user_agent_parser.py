@@ -111,54 +111,46 @@ class OSParser(object):
                            for group_index in range(1, match.lastindex + 1)]
         return match_spans
 
-    def ApplyReplacement(self, replacement, match):
-        context = {
-            'max_replacement_n': 0,
-            'replacements_count': 0,
-        }
+    def MultiReplace(self, string, match):
+        def _repl(m):
+            index = int(m.group(1)) - 1
+            group = match.groups()
+            if index < len(group):
+                return group[index]
+            return ''
 
-        def count_replacements(replacement_match):
-            replacement_n = int(replacement_match.group(1))
-            context['max_replacement_n'] = max(replacement_n, context['max_replacement_n'])
-            context['replacements_count'] += 1
-            return '{{{0}}}'.format(replacement_n)
-
-        replacement_format = re.sub(r'\$(\d)', count_replacements, replacement)
-        if context['replacements_count'] == 0:
-            return replacement
-        else:
-            sub_args = [''] + [
-                match.group(x) if x <= match.lastindex else ''
-                for x in range(1, context['max_replacement_n'] + 1)
-            ]
-            return replacement_format.format(*sub_args)
+        _string = re.sub(r'\$(\d)', _repl, string)
+        _string = re.sub(r'^\s+|\s+$', '', _string)
+        if _string == '':
+            return None
+        return _string
 
     def Parse(self, user_agent_string):
         os, os_v1, os_v2, os_v3, os_v4 = None, None, None, None, None
         match = self.user_agent_re.search(user_agent_string)
         if match:
             if self.os_replacement:
-                os = self.ApplyReplacement(self.os_replacement, match)
+                os = self.MultiReplace(self.os_replacement, match)
             elif match.lastindex:
                 os = match.group(1)
 
             if self.os_v1_replacement:
-                os_v1 = self.ApplyReplacement(self.os_v1_replacement, match)
+                os_v1 = self.MultiReplace(self.os_v1_replacement, match)
             elif match.lastindex and match.lastindex >= 2:
                 os_v1 = match.group(2)
 
             if self.os_v2_replacement:
-                os_v2 = self.ApplyReplacement(self.os_v2_replacement, match)
+                os_v2 = self.MultiReplace(self.os_v2_replacement, match)
             elif match.lastindex and match.lastindex >= 3:
                 os_v2 = match.group(3)
 
             if self.os_v3_replacement:
-                os_v3 = self.ApplyReplacement(self.os_v3_replacement, match)
+                os_v3 = self.MultiReplace(self.os_v3_replacement, match)
             elif match.lastindex and match.lastindex >= 4:
                 os_v3 = match.group(4)
 
             if self.os_v4_replacement:
-                os_v4 = self.ApplyReplacement(self.os_v4_replacement, match)
+                os_v4 = self.MultiReplace(self.os_v4_replacement, match)
             elif match.lastindex and match.lastindex >= 5:
                 os_v4 = match.group(5)
 
@@ -254,6 +246,42 @@ def Parse(user_agent_string, **jsParseBits):
     return v
 
 
+def parse(user_agent_string, js_parse_bits=None, extra_device_parsers=None):
+    """Parse all the things
+
+    Args:
+        user_agent_string: the full user agent string
+        js_parse_bits: javascript override bits
+        extra_device_parsers: an iterable of extra device parsers.
+
+    Returns:
+        A dictionary containing all parsed bits
+    """
+    if not js_parse_bits:
+        js_parse_bits = {}
+
+    if not extra_device_parsers:
+        cache_key = (user_agent_string, repr(js_parse_bits))
+        cached = _parse_cache.get(cache_key)
+        if cached is not None:
+            return cached
+    else:
+        cache_key = None
+
+    if len(_parse_cache) > MAX_CACHE_SIZE:
+        _parse_cache.clear()
+    v = {
+        'user_agent': ParseUserAgent(user_agent_string, **js_parse_bits),
+        'os': ParseOS(user_agent_string, **js_parse_bits),
+        'device': parse_device(user_agent_string, extra_device_parsers),
+        'string': user_agent_string
+    }
+
+    if cache_key:
+        _parse_cache[cache_key] = v
+    return v
+
+
 def ParseUserAgent(user_agent_string, **jsParseBits):
     """ Parses the user-agent string for user agent (browser) info.
     Args:
@@ -328,11 +356,46 @@ def ParseDevice(user_agent_string):
         ua_family: The parsed user agent family name.
     Returns:
         A dictionary containing parsed bits.
+    Notes:
+        This function is deprecated, use `parse_device` instead.
     """
     for deviceParser in DEVICE_PARSERS:
         device, brand, model = deviceParser.Parse(user_agent_string)
         if device:
             break
+
+    if device is None:
+        device = 'Other'
+
+    return {
+        'family': device,
+        'brand': brand,
+        'model': model
+    }
+
+
+def parse_device(user_agent_string, extra_parsers=None):
+    """ Parses the user-agent string for device info.
+    Args:
+        user_agent_string: The full user-agent string.
+        extra_parsers: An iterable of DeviceParser objects. They will be processed before built-in parsers.
+    Returns:
+        A dictionary containing parsed bits.
+    """
+    if not extra_parsers:
+        extra_parsers = []
+
+    device, brand, model = None, None, None
+    for parser in extra_parsers:
+        device, brand, model = parser.Parse(user_agent_string)
+        if device:
+            break
+
+    if device is None:
+        for deviceParser in DEVICE_PARSERS:
+            device, brand, model = deviceParser.Parse(user_agent_string)
+            if device:
+                break
 
     if device is None:
         device = 'Other'

@@ -9,3 +9,4 @@ tmp/
 regexes.yaml
 _regexes.py
 .idea/
+.DS_Store
